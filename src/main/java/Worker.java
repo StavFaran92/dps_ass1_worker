@@ -112,11 +112,12 @@ public class Worker {
 
                     performTask(messageInfo);
 
-                    sqs.deleteMessage( inputQueueUrl, message.getReceiptHandle());
-
                 } catch (IOException e) {
 
                     handleException(messageInfo, e);
+                }
+                finally {
+                    sqs.deleteMessage( inputQueueUrl, message.getReceiptHandle());
                 }
             }
             else{
@@ -263,7 +264,7 @@ public class Worker {
 
         System.out.println("Exception in Worker, Rebooting.\n");
 
-        String message = prepareMessage(messageInfo.getAction(), messageInfo.getFile_url(), e.getMessage());
+        String message = prepareMessage(messageInfo.getAction(), messageInfo.getFile_url(), e.toString());
 
         sendSQSMessage(messageInfo, message);
 
@@ -271,7 +272,7 @@ public class Worker {
 
     private static void sendSQSMessage(final MessageInfo messageInfo, String message){
 
-        sqs.sendMessage(new SendMessageRequest(inputQueueUrl, message)
+        sqs.sendMessage(new SendMessageRequest(outputQueueUrl, message)
                 .withMessageAttributes(new HashMap<String, MessageAttributeValue>(){{
                     put(TASK_ID, new MessageAttributeValue().withDataType("String").withStringValue(messageInfo.getTask_id()));
                 }}));
