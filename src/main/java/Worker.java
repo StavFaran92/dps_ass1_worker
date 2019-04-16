@@ -108,15 +108,15 @@ public class Worker {
 
                 final MessageInfo messageInfo = processMessage(message);
 
-                sqs.deleteMessage( inputQueueUrl, message.getReceiptHandle());
-
                 try {
 
                     performTask(messageInfo);
 
+                    sqs.deleteMessage( inputQueueUrl, message.getReceiptHandle());
+
                 } catch (IOException e) {
 
-                    handleException(messageInfo);
+                    handleException(messageInfo, e);
                 }
             }
             else{
@@ -162,13 +162,7 @@ public class Worker {
 
                 message = prepareMessage(action, inputUrl, outputUrl);
 
-                Map<String,MessageAttributeValue> msgAttributes = new HashMap<String, MessageAttributeValue>(){
-                    {
-                        put(TASK_ID, new MessageAttributeValue().withDataType("String")
-                                .withStringValue(messageInfo.getTask_id()));
-                    }};
-
-                sqs.sendMessage(new SendMessageRequest(outputQueueUrl, message).withMessageAttributes(msgAttributes));
+                sendSQSMessage(messageInfo, message);
             }
         }
     }
@@ -265,23 +259,22 @@ public class Worker {
         return action + ":" + inputUrl + "\t" + outputUrl + "\n";
     }
 
-    private static void handleException(final MessageInfo messageInfo){
+    private static void handleException(final MessageInfo messageInfo, Exception e){
 
         System.out.println("Exception in Worker, Rebooting.\n");
 
-        sqs.sendMessage(new SendMessageRequest(inputQueueUrl, "new PDF task")
-                .withMessageAttributes(new HashMap<String, MessageAttributeValue>(){{
-            put(ACTION, new MessageAttributeValue().withDataType("String").withStringValue(messageInfo.getAction()));
-            put(FILE_URL, new MessageAttributeValue().withDataType("String").withStringValue(messageInfo.getFile_url()));
-            put(TASK_ID, new MessageAttributeValue().withDataType("String").withStringValue(messageInfo.getTask_id()));
-        }}));
+        String message = prepareMessage(messageInfo.getAction(), messageInfo.getFile_url(), e.getMessage());
 
-        sqs.sendMessage(new SendMessageRequest(outputQueueUrl, "reboot")
-                .withMessageAttributes(new HashMap<String, MessageAttributeValue>()
-        {{
-            put("instance_id", new MessageAttributeValue().withDataType("String")
-                .withStringValue(EC2MetadataUtils.getInstanceId()));
-        }}));
+        sendSQSMessage(messageInfo, message);
+
+    }
+
+    private static void sendSQSMessage(final MessageInfo messageInfo, String message){
+
+        sqs.sendMessage(new SendMessageRequest(inputQueueUrl, message)
+                .withMessageAttributes(new HashMap<String, MessageAttributeValue>(){{
+                    put(TASK_ID, new MessageAttributeValue().withDataType("String").withStringValue(messageInfo.getTask_id()));
+                }}));
     }
 }
 
