@@ -257,7 +257,7 @@ public class Worker {
     private static String prepareMessage(String action, String inputUrl, String outputUrl){
         System.out.println("prepare message for send.\n");
 
-        return action + ":" + inputUrl + "\t" + outputUrl + "\n";
+        return action + ": " + inputUrl + "\t" + outputUrl + "\n";
     }
 
     private static void handleException(final MessageInfo messageInfo, Exception e){
