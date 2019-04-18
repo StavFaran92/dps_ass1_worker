@@ -206,15 +206,15 @@ public class Worker {
     private static File convertPDFToImage(PDDocument doc) throws IOException {
 
         PDFImageWriter imageWriter = new PDFImageWriter();
-        boolean success = imageWriter.writeImage(doc, "jpg","",
+        boolean success = imageWriter.writeImage(doc, "png","",
                 1,1,"img", BufferedImage.TYPE_INT_RGB,256);
         doc.close();
         if (!success) {
             System.err.println("Error: no writer found for image format '"
-                    + "jpg" + "'");
+                    + "png" + "'");
         }
         else{
-            return new File("img1.jpg");
+            return new File("img1.png");
         }
         return null;
 
